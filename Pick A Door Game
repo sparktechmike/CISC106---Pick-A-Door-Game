@@ -1,0 +1,258 @@
+"""
+Michael Pollins
+mdpoll@udel.edu
+This is a troll "choose your adventure game." You can either choose the red door or the green door to start.
+Picking the red door pits you against an angry honey badger.
+After trying to talk to it to calm down, you have a choice between picking up a rubber ducky or a machete.
+One option lets you survive, but both options makes the user feel bad about themselves.
+Note that none of what is said should be taken personally.
+In the green door there is an art gallery, except it only has one painting and one photo, both being the same painting.
+There is also a "credits" button where I arrogantly claim to be the best programmer while also shouting out UD's CISC program.
+"""
+from drafter import *
+from dataclasses import dataclass
+from bakery import assert_equal
+
+@dataclass
+class State:
+    """
+    This is the dataclass for State, which has a message field for the TextBox, and also has
+    a bunch of boolean fields for each decision made in the game.
+    """
+    message: str
+    red_choice: bool
+    green_choice: bool
+    pick_ducky: bool
+    pick_machete: bool
+    paint: bool
+    photo: bool
+    
+@route
+def index(state: State) -> Page:
+    """
+    This is the index page, or the main page of the website.
+    It sets the message field of State, which will be used later in the site.
+    It asks the player to pick a red door or a green door, and the checkboxes that they select are saved to the booleans
+    'red_choice' and 'green_choice'.
+    There's also a 'credits' section you can go visit and a venting section.
+    Each button calls a different function.
+    """
+    state.message = "Say something!!!"
+    return Page(state, [
+        "Welcome to a typical pick a door game. Would you like to pick the red or the green door?",
+        "Red door",
+        CheckBox("pick_red", state.red_choice),
+        "Green door",
+        CheckBox("pick_green", state.green_choice),
+        Button("GO", choice),
+        Button("CREDITS", credits),
+        Button("VENT", venting)
+    ])
+
+@route
+def venting(state:State) -> Page:
+    """
+    This is the venting funciton called when you click the "VENT" button.
+    It has a TextArea object that you can use to type out your frustrations, but the game doesn't actually care.
+    """
+    return Page(state, [
+        "Here is a place that you can vent all your frustrations from life.",
+        "DISCLAIMER: Despite how well you wax poetic about your woes, I do not care.",
+        TextArea("text", "Enter your irrelevant frustrations here:"),
+        " ",
+        Button("BACK TO START", index)
+        ])
+
+@route
+def credits(state: State) -> Page:
+    """
+    This is the credits page, where I flex how good I am at coding.
+    (I definitely didn't just look at the example for everything.)
+    I also shout out UD's CISC program as so far it's been great!
+    """
+    return Page(state, [
+    "This was created by Michael Pollins, the greatest programmer ever. If you disagree, you're wrong.",
+    "In actuality this was only possible through the staff at the CISC program at the University of Delaware.",
+    Button("BACK TO START", index)
+    ])
+
+@route
+def choice(state:State, pick_red: bool, pick_green:bool) -> Page:
+    """
+    This is the function that is called when you pick the red or the green door.
+    If you picked the red door, you encounter a honey badger that tries to kill you, and the game prompts you to say something
+    to it to calm it down.
+    The message saved to the State's 'message' field is seen in the TextBox.
+    If you picked the green door, you are brought to an art gallery, where you have a choice to view either paintings or photos.
+    The player chooses by selecting a CheckBox, which saves their choice to another set of booleans, 'paint' or 'photo'.
+    If you just clicked the "GO" button, the game calls you stupid and prompts you to go back and click one of the
+    checkboxes.
+    """
+    if pick_red:
+        return Page(state, [
+            "You entered the red door, and you found an angry honey badger that wants to kill you!",
+            Image("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSo8qSeWNQpGO1Qvk3sQe6BUHgBOXhfjVsSRw&usqp=CAU"),
+            "Quick, say something to it to calm it down!",
+            TextBox("new_message", state.message),
+            Button("DECLARE", set_message)
+             ])
+    elif pick_green:
+        return Page(state, [
+            "Welcome to the art gallery! There's nothing else here, just an art gallery.",
+            "Would you like to see paintings or photos?",
+            "Paintings",
+            CheckBox("painting", state.paint),
+            "Photos",
+            CheckBox("photo", state.photo),
+            Button("VIEW", gallery)
+            ])
+    else:
+        return Page(state, [
+            "You haven't picked a door yet, stupid.",
+            Button("BACK TO START", index)
+            ])
+    
+@route
+def gallery(state: State, painting: bool, photo: bool) -> Page:
+    """
+    This is the gallery function called after you decide whether you want to view a picture painting or a photo,
+    after picking the green door.
+    If you picked the painting, you'll see the painting 'Water Lillies' by Claude Monet, and if
+    you picked the photo, you'll see a photo of the image on display at the Musée de l’Orangerie.
+    However, both the painting and the photo are of the same image, except one is on display.
+    Both choices prompt you to either view another image, or to go back to the start.
+    Once again, if you click the "VIEW" button without checking one of the boxes,
+    the game calls you stupid and forces you to go back to the start.
+    """
+    if painting:
+        url = "https://www.artic.edu/iiif/2/3c27b499-af56-f0d5-93b5-a7f2f1ad5813/full/843,/0/default.jpg"
+        return Page(state, [
+            "Here is the painting 'Water Lillies' created in 1919 by Claude Monet.",
+            Image(url),
+            Button("VIEW ANOTHER IMAGE", painting_end),
+            Button("BACK TO START", index)
+            ])
+    elif photo:
+        url = "https://i0.wp.com/parisresidencesjamesjoyce.com/wp-content/uploads/2020/09/DSCN8695.jpg?resize=1024%2C768&ssl=1"
+        return Page(state, [
+            "Here is a photo of the painting 'Water Lillies' made in 1919 by Claude Monet, displayed at the Musée de l’Orangerie.",
+            Image(url, 900),
+            Button("VIEW ANOTHER IMAGE", photo_end),
+            Button("BACK TO START", index)
+            ])
+    else:
+        return Page(state, [
+            "You haven't picked an option. (Stupid.)",
+            Button("BACK TO START", index)
+            ])
+    
+@route
+def painting_end(state:State) -> Page:
+    """
+    This is the function that is called when you ask to view more paintings.
+    The game mentions that there is only one painting in the exhibit, stating that the budget was low at the museum.
+    You can either see 'another' painting or you can go back to the start.
+    """
+    url = "https://www.artic.edu/iiif/2/3c27b499-af56-f0d5-93b5-a7f2f1ad5813/full/843,/0/default.jpg"
+    return Page(state, [
+        "Um, this is awkward. We only have one painting in the gallery.",
+        " . . . ",
+        "The budget was low, okay? Be grateful we let you in for free.",
+        Image(url),
+        Button("VIEW ANOTHER IMAGE", painting_end),
+        Button("BACK TO START", index)
+        ])
+
+@route
+def photo_end(state:State) -> Page:
+    """
+    This is the function that is called when you ask to view more photos.
+    Similarly to the paint exhibit, the game mentions that there is only one photo in the exhibit,
+    and that it is the same image as in the paint exhibit, but they couldn't do much in this economy.
+    You can either see 'another' photo or you can go back to the start. 
+    """
+    url = "https://i0.wp.com/parisresidencesjamesjoyce.com/wp-content/uploads/2020/09/DSCN8695.jpg?resize=1024%2C768&ssl=1"
+    return Page(state, [
+        "Listen, I know that this is the same image as in the Paintings exhibit, and the same image you saw previously.",
+        "But what else were we supposed to do in this economy? Stop being so judgemental!",
+        Image(url, 900),
+        Button("VIEW ANOTHER IMAGE", photo_end),
+        Button("BACK TO START", index)
+         ])
+
+@route
+def set_message(state: State, new_message: str) -> Page:
+    """
+    This is the function that is called once you entered a message to tell the honey badger after selecting the red door.
+    The game saves the message you typed into the State's message field, and displays what you typed.
+    It then says that the badger doesn't care about what you had to say.
+    On the ground you find a rubber ducky and a machete, and the game asks you which one to pick, saving your choice to the
+    State's boolean fields, 'pick_ducky' or 'pick_machete'.
+    """
+    state.message = new_message
+    return Page(state, [
+        "You said:",
+        state.message,
+        "However, it doesn't seem that the badger cares, as it doesn't understand English. (What an idiot.)",
+        "You find on the floor a rubber ducky and a machete. Which do you pick?",
+        Image("https://i.imgur.com/tZveCLw.jpg"),
+        #Image("https://m.media-amazon.com/images/I/515JkbAAp1L.jpg", 250, 250),
+        "Rubber duck",
+        CheckBox("ducky", state.pick_ducky),
+        "Machete",
+        CheckBox("choppy", state.pick_machete),
+        Button("GO", red_door_finale)
+         ])
+
+
+
+
+@route
+def red_door_finale(state: State, ducky: bool, choppy: bool) -> Page:
+    """
+    This is the function that is called after you chose the rubber ducky or the machete, and signifies the end of the game.
+    If you picked the rubber ducky, the game explains that you started explaining some code you were struggling with to the ducky,
+    and the badger labeled you as insane and decided to leave you alone.
+    If you picked the machete, you find out the hard way that badgers' fur can protect from machete swings and from small bullets,
+    and the badger kills you.
+    Once again, if you chose none of the CheckBoxes, the game calls you stupid and forces you to go back to the beginning.
+    """
+    if ducky:
+        return Page(state, [
+            "You started explaining the code of a recent coding project you've been struggling with to your rubber ducky.",
+            "The badger is confused by this, and after a while decides that you're clinically insane. It then leaves you in the room, alone.",
+            "Congratulations, I guess, for being a loser.",
+            Button("BACK TO START", index)
+             ])
+    elif choppy:
+        return Page(state, [
+            "You picked up the machete and tried chopping the badger with it.",
+            "However, badgers' fur can (somehow) protect them against blades and even small bullets.",
+            "The badger proceeded to maul you with your own machete, and you died.",
+            "Skill issue.",
+            Button("BACK TO START", index)
+            ])
+    else:
+        return Page(state, [
+            "You haven't picked a door yet, stupid.",
+            Button("BACK TO START", index)
+            ])
+    
+assert_equal(red_door_finale(State("", False, False, True, False, False, False), True, False), Page(State("", False, False, True, False, False, False),[
+            "You started explaining the code of a recent coding project you've been struggling with to your rubber ducky.",
+            "The badger is confused by this, and after a while decides that you're clinically insane. It then leaves you in the room, alone.",
+            "Congratulations, I guess, for being a loser.",
+            Button("BACK TO START", index)
+      ]))
+
+assert_equal(red_door_finale(State("", False, False, False, True, False, False), False, True), Page(State("", False, False, False, True, False, False),[
+            "You picked up the machete and tried chopping the badger with it.",
+            "However, badgers' fur can (somehow) protect them against blades and even small bullets.",
+            "The badger proceeded to maul you with your own machete, and you died.",
+            "Skill issue.",
+            Button("BACK TO START", index)
+      ]))
+    
+    
+        
+start_server(State("", False, False, False, False, False, False))
